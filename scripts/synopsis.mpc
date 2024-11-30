@@ -240,13 +240,17 @@ def ft(data, data_sq, query, threshold, eps, sen):
 # CT query
 def ct(data, data_sq, query, threshold):
    
+   print_ln("---------------coarse-grained threshold query-----------------")
+   
    # calculate unthresholded count in secret
    count = cc(data, data_sq, query, threshold):
-    
-    
+
+   thresholded_count = apply_threshold(count, threshold)    
+
+   return thresholded_count     
 
 
-
+# detailed error analysis (not currently called; call on threshold_arr in count queries to use)
 def error_checking(y_true, y_pred): # for coarse-grained queries only
    
    tn = Array(1, sfloat)
