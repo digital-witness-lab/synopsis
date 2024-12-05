@@ -16,3 +16,47 @@ Pending dockerification, this should run out-of-the-box.
 <sup>1</sup> https://eprint.iacr.org/2020/521
 
 <sup>2</sup> https://www.microsoft.com/en-us/download/details.aspx?id=105292
+
+
+## Running
+
+### Docker setup
+
+CONFIG.mine:
+```
+CXX = clang++-11
+USE_NTL = 0
+MY_CFLAGS += -I/usr/local/include -DINSECURE
+MY_LDLIBS += -Wl,-rpath -Wl,/usr/local/lib -L/usr/local/lib
+PREP_DIR = '-DPREP_DIR="Player-Data/"'
+SSL_DIR = '-DSSL_DIR="Player-Data/"'
+MOD = -DGFP_MOD_SZ=2
+```
+
+- GENERAL SETUP:
+    - base mpspdz:mascot-party
+    - make mascot-party.x
+    - make setup
+    - make -j Fake-Offline.x
+    - ./Scripts/setup-online.sh
+    - pip install scikit-learn
+
+- PROGRAM DEPENDANT:
+    - ./compile.py -l synopsis
+    - ./mascot-offline.x -F -N 2 0 synopsis & ./mascot-offline.x -F -N 2 1 synopsis
+    - ./Scripts/mascot.sh -F synopsis  # this runs the thing
+
+
+### Host Setup
+
+- Start with `data.jsonl` with newline separated json records with "text" and "embedding" records. "embedding" is a list of floats
+- Run `run.py` with `data.jsonl` substituted in line 35
+    - this outputs `benchmarks.tsv` which is nice for checking results
+    - outputs `query.tsv` and `database.tsv` for use with SPDZ
+        - could instead output each file into single line, space separated 32bit fixed floats
+- Manually create single-line 32bit fixed floats
+    - `database.tsv` file should map to `Player-Data/Input-P0-0`
+    - `database.tsv` file is squared element-wise and mapped to `Player-Data/Input-P1-0`
+    - `query.tsv` is hardcoded currently in `synopsis.mpc` (line 338)
+- Run program dependant parts from up top
+- Look at stdout for results
