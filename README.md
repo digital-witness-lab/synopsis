@@ -20,6 +20,7 @@ Pending dockerification, this should run out-of-the-box.
 
 ## Running
 
+
 ### Docker setup
 
 CONFIG.mine:
@@ -35,15 +36,15 @@ MOD = -DGFP_MOD_SZ=2
 
 - GENERAL SETUP:
     - base mpspdz:mascot-party
-    - make mascot-party.x
-    - make setup
+    - make -j mascot-party.x
+    - make -j setup
     - make -j Fake-Offline.x
     - ./Scripts/setup-online.sh
+    - ./Fake-Offline.x 2
     - pip install scikit-learn
 
 - PROGRAM DEPENDANT:
     - ./compile.py -l synopsis
-    - ./mascot-offline.x -F -N 2 0 synopsis & ./mascot-offline.x -F -N 2 1 synopsis
     - ./Scripts/mascot.sh -F synopsis  # this runs the thing
 
 
