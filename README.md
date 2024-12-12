@@ -13,9 +13,9 @@ Pending dockerification, this should run out-of-the-box.
 
 
 
-<sup>1</sup> https://eprint.iacr.org/2020/521
+<sup>1</sup> <url>https://eprint.iacr.org/2020/521</url>
 
-<sup>2</sup> https://www.microsoft.com/en-us/download/details.aspx?id=105292
+<sup>2</sup> <url>https://www.microsoft.com/en-us/download/details.aspx?id=105292</url>
 
 
 ## Running
@@ -43,7 +43,7 @@ MOD = -DGFP_MOD_SZ=2
     - ./Fake-Offline.x 2
     - pip install scikit-learn
 
-- PROGRAM DEPENDANT:
+- PROGRAM DEPENDENT:
     - ./compile.py -l synopsis
     - ./Scripts/mascot.sh -F synopsis  # this runs the thing
 
@@ -59,5 +59,5 @@ MOD = -DGFP_MOD_SZ=2
     - `database.tsv` file should map to `Player-Data/Input-P0-0`
     - `database.tsv` file is squared element-wise and mapped to `Player-Data/Input-P1-0`
     - `query.tsv` is hardcoded currently in `synopsis.mpc` (line 338)
-- Run program dependant parts from up top
+- Run program dependent parts from up top
 - Look at stdout for results
