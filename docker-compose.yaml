@@ -1,0 +1,7 @@
+services:
+  synopsis:
+    build: .
+    volumes:
+      - ./src/:/app/src/
+
+
