@@ -12,7 +12,7 @@ ARG PYTHON_TAG=3.13-slim-bullseye
 # buildenv based off of https://github.com/data61/MP-SPDZ/blob/master/Dockerfile
 FROM python:${PYTHON_TAG} AS build-mp-spdz
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt update && apt install -y --no-install-recommends \
                 automake \
                 build-essential \
                 clang-11 \
@@ -54,11 +54,13 @@ RUN echo "CXX = ${cxx}" >> CONFIG.mine &&\
     echo "SSL_DIR = '-DSSL_DIR=\"${ssl_dir}/\"'" >> CONFIG.mine && \
     mkdir -p $prep_dir $ssl_dir
 
-RUN make clean-deps boost libote
+RUN make -j clean-deps && \
+    make -j boost && \
+    make -j libote
 
-RUN make mascot-party.x && \
-    make setup && \
-    make Fake-Offline.x && \
+RUN make -j mascot-party.x && \
+    make -j setup && \
+    make -j Fake-Offline.x && \
     ./Scripts/setup-online.sh
 
 ARG CRYPTO_PLAYERS
@@ -82,6 +84,17 @@ ENV MP_SPDZ_HOME=${MP_SPDZ_HOME}
 ENV PYTHONPATH="${MP_SPDZ_HOME}:${PYTHONPATH}"
 
 COPY --from=build-mp-spdz ${MP_SPDZ_HOME} ${MP_SPDZ_HOME}
+
+RUN apt update && apt install -y --no-install-recommends \
+                libboost-dev \
+                libboost-thread-dev \
+                libclang-dev \
+                libgmp-dev \
+                libntl-dev \
+                libsodium-dev \
+                libssl-dev \
+                libtool \
+        && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip install -r requirements.txt

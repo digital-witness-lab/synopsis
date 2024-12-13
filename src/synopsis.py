@@ -4,17 +4,24 @@ from Compiler import mpc_math
 from Compiler.instructions import *
 from Compiler.util import if_else
 
-from Compiler.types import sfix, sfloat, Array
+from Compiler.types import cfix, sint, sfix, sfloat, Array, Matrix
 from Compiler.util import if_else
 from Compiler.library import for_range_opt, print_ln
 
 # from laplace import apply_laplace_mechanism
-import time
+import math
 
 
 _DEBUG = True
 print_secrets = True
-compiler = Compiler()
+compiler = Compiler(
+    [
+        "--optimize-hard",
+        "--insecure",
+        "--flow-optimization",
+        "-E", "mascot"],
+    execute=True,
+)
 
 # arithmetic funcs
 
@@ -37,16 +44,13 @@ def find_sign(v):
 
 # translate unif-randomly drawn samples in the interval [-0.5, 0.5] to random draws from laplace distribution
 def laplace_inverse_cdf(unif, scale):
-
     laplace_noise = Matrix(1, len(unif[0]), sfix)
     sign_corrected = Matrix(1, len(unif[0]), sfix)
 
     @for_range_opt(len(unif[0]))
     def _(i):
         sign_corrected[0][i] = find_sign(unif[0][i])
-
         unif_abs = abs(unif[0][i])
-
         laplace_noise[0][i] = -scale * sign_corrected[0][i] * ln(1 - 2 * unif_abs)
 
     return laplace_noise
@@ -54,34 +58,27 @@ def laplace_inverse_cdf(unif, scale):
 
 # combine data vecs and laplace noise matrix
 def apply_laplace_mechanism_one(vecs, eps, sen, phase):
-
     # scale is sensitivity over epsilon allowance
     scale = cfix(sen / eps)
-
     # FT queries: counts noising
-
-    unif_sample = unif_random_gen(1, 1, 1, 1)
+    unif_sample = unif_random_gen(1, 1, 1)
 
     noise_for_count = laplace_inverse_cdf(unif_sample, scale)
-
     noised_count = sfloat(vecs[0][0]) + sfloat(noise_for_count[0][0])
-
     return noised_count
 
 
 # return n_vecs x vec_dim matrix of unif-randomly generated samples (for noising dataspace)
-def unif_random_gen(bitlength, n_vecs, vec_dim, vec_length):
-
-    bitlength = 3
-
+def unif_random_gen(n_vecs, vec_dim, vec_length):
+    bit_length = 3
     M = Matrix(1, vec_length, sfix)
 
     @for_range_opt(vec_length)
     def _(i):
-        randint = sint.get_random_int(bitlength)
+        randint = sint.get_random_int(bit_length)
 
         # normalize to interval [0, 1] and shift 0.5 to left to obtain randint in [-0.5, 0.5]
-        fraction = (sfix(randint) * sfix(2 ** (-bitlength))) - 0.5
+        fraction = (sfix(randint) * sfix(2 ** (-bit_length))) - 0.5
 
         M[0][i] = fraction
 
@@ -90,7 +87,6 @@ def unif_random_gen(bitlength, n_vecs, vec_dim, vec_length):
 
 # apply distance (NOT eligible counts) threshold; accepts (1 x n) matrix and returns array
 def apply_threshold(data, count_threshold):
-
     count_threshold = sfloat(count_threshold)
     eligible = Array(len(data), sint)
     eligible[0] = sint(0)
@@ -107,12 +103,9 @@ def apply_threshold(data, count_threshold):
 
 # generate duplicate/concatenated query vector
 def pad_query(query, rows, cols):  # output size is query size x database size
-
     dup = rows
-
     # Duplicate and concatenate the vector
     padded_q = query * int(dup)
-
     return padded_q
 
 
@@ -120,36 +113,35 @@ def pad_query(query, rows, cols):  # output size is query size x database size
 def two_x_q(
     data, query
 ):  # output size is query size x database size; accepts two one-dim matrices
-
     composite = Array(len(data), sfix)
-
-    total = len(data)
-
     print_ln("calculate 2xq")
-
-    client = Array(1, sfix)
-
     # scalar doubling
-    composite = [2 * a * b for a, b in zip(data, query)]
 
+    N = int(len(query))
+
+    #@for_range_opt(len(data))
+    #def _(i):
+    #    composite[i] = 2 * data[i] * query[i % N]
+
+    composite[:] = [2 * a * b for a, b in zip(data, query)]
     return composite
 
 
 # q^2
 def squared_q(query):  # output size is query size
-
     print_ln("calculate q^2")
-
     q_squared = Array(int(len(query)), sfix)
 
-    q_squared = [a * a for a, a in zip(query, query)]
+    #@for_range_opt(len(query))
+    #def _(i):
+    #    q_squared[i] = query[i] ** 2
 
+    q_squared[:] = [a * a for a, a in zip(query, query)]
     return q_squared
 
 
 # string together (x - q) calculations
 def find_dist(data, data_sq, query):  # accepts MultiArray and Matrix; returns Array
-
     # decompose squared diff into x^2 - 2xq + q^2
     # -- x^2 happens on intake, before querytime, and is a private x private calculation
     # -- 2xq happens during querytime, and is a private x public calculation
@@ -172,19 +164,21 @@ def find_dist(data, data_sq, query):  # accepts MultiArray and Matrix; returns A
     q_squared = squared_q(padded_q)
 
     diffed = Array(int(rows * cols), sfix)
-    diffed = [a - b + c for a, b, c in zip(data_sq, two_ex_q, q_squared)]
+
+    # @for_range_opt(len(data_sq))
+    # def _(i):
+        # diffed[i] = data_sq[i] - two_ex_q[i] + q_squared[i]
+    diffed[:] = [a - b + c for a, b, c in zip(data_sq, two_ex_q, q_squared)]
 
     # sum every sequence of [query-length]-element sfixes together
 
     sums = Matrix(1, int(rows), sfix)
-    sums[0] = [sum(diffed[i : i + cols]) for i in range(0, len(data), cols)]
-
+    sums[0] = [sum(diffed[i: i + cols]) for i in range(0, len(data), cols)]
     return sums[0]
 
 
 # FC query
 def fc(data, data_sq, query, threshold, eps, sen):
-
     print_ln("---------------fine-grained count query-----------------")
     print_ln("epsilon budget: %s", eps)
 
@@ -206,16 +200,10 @@ def fc(data, data_sq, query, threshold, eps, sen):
 
 # CC query
 def cc(data, data_sq, query, threshold):
-
     print_ln("---------------coarse-grained count query-----------------")
 
-    rows = len(data) / len(query)
-    cols = len(query)
-
     # find unnoised dists for error checking
-    dist_start = time.time()
     true_mat = find_dist(data, data_sq, query)
-    dist_stop = time.time()
     thresholded_count, thresholded_arr = apply_threshold(true_mat, threshold)
 
     print_ln("thresholded count: %s:", thresholded_count[0].reveal())
@@ -224,7 +212,6 @@ def cc(data, data_sq, query, threshold):
 
 # FT query
 def ft(data, data_sq, query, ball_threshold, eps, sen, release_threshold):
-
     print_ln("---------------fine-grained threshold query-----------------")
     print_ln("epsilon budget: %s", eps)
 
@@ -238,15 +225,12 @@ def ft(data, data_sq, query, ball_threshold, eps, sen, release_threshold):
     noised_count = apply_laplace_mechanism_one(thresholded_count, eps, sen, 1)
 
     flag = sint(noised_count > release_threshold).if_else(1, 0)
-
     print_ln("thresholded result: %s", flag.reveal())
-
     return flag
 
 
 # CT query
 def ct(data, data_sq, query, ball_threshold, release_threshold):
-
     print_ln("---------------coarse-grained threshold query-----------------")
 
     # calculate unthresholded count in secret
@@ -254,15 +238,12 @@ def ct(data, data_sq, query, ball_threshold, release_threshold):
     thresholded_count, thresholded_arr = apply_threshold(true_mat, ball_threshold)
 
     flag = sint(thresholded_count[0] > release_threshold).if_else(1, 0)
-
     print_ln("thresholded result: %s", flag.reveal())
-
     return flag
 
 
 # detailed error analysis (not currently called; call on threshold_arr in count queries to use)
 def error_checking(y_true, y_pred):  # for coarse-grained queries only
-
     tn = Array(1, sfloat)
     tn[0] = sfloat(0)
     tp = Array(1, sfloat)
@@ -318,19 +299,22 @@ def error_checking(y_true, y_pred):  # for coarse-grained queries only
     tp[0] = tp[0] / len(y_true)
 
     print_ln("tn rate: %s", tn[0].reveal())
-
     print_ln("tp rate: %s", tp[0].reveal())
-
     print_ln("fn rate: %s", fn[0].reveal())
-
     print_ln("fp rate: %s", fp[0].reveal())
 
 
 @compiler.register_function("synopsis")
 def synopsis():
-    # ~~~~~~~~~~~~~~ file io ~~~~~~~~~~~~~~~~~#
+    # TODO: inputs for -- database size and query vector
 
+    # ~~~~~~~~~~~~~~ file io ~~~~~~~~~~~~~~~~~#
     sfix.set_precision(16, 31)
+    # Probabilistic truncation leaks some information, see
+    # https://eprint.iacr.org/2024/1127 for discussion. Setting
+    # sfix.round_nearest = True to address
+    sfix.round_nearest = True
+
 
     # 524288 for full sample database, dim 1024 x 512
     database = Array(524288, sfix)  # database only
@@ -351,6 +335,8 @@ def synopsis():
 
     from .query import query_clear
 
+    query_clear_cfix = Array(len(query_clear), cfix)
+    query_clear_cfix[:] = query_clear
     # database = Array(30000, sfix)
 
     # query_secret = Matrix(1, 500, sfix)
@@ -371,13 +357,10 @@ def synopsis():
 
     # function calls for all query types take the following form:
 
-    fc_test = fc(database, database_sq, query_clear, 1.3, 4, 1)
-
-    cc_test = cc(database, database_sq, query_clear, 1.3)
-
-    ft_test = ft(database, database_sq, query_clear, 1.3, 4, 1, 5)
-
-    ct_test = ct(database, database_sq, query_clear, 1.3, 5)
+    fc_test = fc(database, database_sq, query_clear_cfix, 1.3, 4, 1)
+    cc_test = cc(database, database_sq, query_clear_cfix, 1.3)
+    ft_test = ft(database, database_sq, query_clear_cfix, 1.3, 4, 1, 5)
+    ct_test = ct(database, database_sq, query_clear_cfix, 1.3, 5)
 
 
 def run():

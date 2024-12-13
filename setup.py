@@ -30,7 +30,7 @@ setup(
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [
-            "synopsis = src.cli:main",
+            "synopsis = synopsis.cli:main",
         ],
     },
 )

@@ -17,7 +17,7 @@ def euclidean(A: np.typing.ArrayLike, B: np.typing.ArrayLike):
     """
     Compute the euclidian (L2) distance between numpy vectors A and B
     """
-    return np.sqrt(np.pow(A - B, 2).sum())
+    return np.sqrt(np.pow(np.asarray(A) - B, 2).sum())
 
 
 plaintext = []
@@ -28,7 +28,7 @@ text_labels = []
 
 print("reading embedding file...")
 
-with open("out.json", "r") as f:
+with open("./data/out.json", "r") as f:
     for idx, line in enumerate(f):
         data = json.loads(line)
         embedding = data["embedding"]
@@ -169,5 +169,6 @@ query_rep_df.to_csv("query.tsv", index=None, sep="\t", header=None)
 
 eps6_five = pd.DataFrame(eps6_noised_embeddings_five)
 eps6_five.to_csv("database.tsv", sep="\t", index=None, header=False)
+eps6_five.pow(2).to_csv("database2.tsv", sep="\t", index=None, header=False)
 
 print("done.")
