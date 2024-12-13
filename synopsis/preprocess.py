@@ -20,7 +20,6 @@ def euclidean(A: np.typing.ArrayLike, B: np.typing.ArrayLike):
     return np.sqrt(np.pow(np.asarray(A) - B, 2).sum())
 
 
-plaintext = []
 all_embeddings = []
 text_labels = []
 

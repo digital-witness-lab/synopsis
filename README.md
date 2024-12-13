@@ -62,9 +62,9 @@ MOD = -DGFP_MOD_SZ=2
         - could instead output each file into single line, space separated 32bit fixed floats
 - Manually create single-line 32bit fixed floats
     - `database.tsv` file should map to `Player-Data/Input-P0-0`
-        - cat database.tsv | tr '[:space:]' ' ' > $MP_SPDZ_HOME/Player-Data/Input-P0-0
-    - `database.tsv` file is squared element-wise and mapped to `Player-Data/Input-P1-0`
-        - cat database2.tsv | tr '[:space:]' ' ' > $MP_SPDZ_HOME/Player-Data/Input-P1-0
+        - cat database.tsv | tr '[:space:]' ' ' > /data/Input-P0-0
+    - `database2.tsv` file mapped to ~~`Player-Data/Input-P1-0`~~ (player-data dir remapepd to /data)
+        - cat database2.tsv | tr '[:space:]' ' ' > /data/Input-P1-0
     - `query.tsv` is hardcoded currently in `synopsis.mpc` (line 338)
 - Run program dependent parts from up top
 - Look at stdout for results

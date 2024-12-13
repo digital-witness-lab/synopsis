@@ -42,8 +42,8 @@ WORKDIR $MP_SPDZ_HOME
 ARG arch=
 ARG cxx=clang++-11
 ARG use_ntl=0
-ARG prep_dir="Player-Data"
-ARG ssl_dir="Player-Data"
+ARG prep_dir="/data/"
+ARG ssl_dir="/data/ssl/"
 
 RUN if test -n "${arch}"; then echo "ARCH = -march=${arch}" >> CONFIG.mine; fi
 RUN echo "CXX = ${cxx}" >> CONFIG.mine &&\
@@ -52,7 +52,8 @@ RUN echo "CXX = ${cxx}" >> CONFIG.mine &&\
     echo "MY_LDLIBS += -Wl,-rpath -Wl,/usr/local/lib -L/usr/local/lib" >> CONFIG.mine && \
     echo "PREP_DIR = '-DPREP_DIR=\"${prep_dir}/\"'" >> CONFIG.mine && \
     echo "SSL_DIR = '-DSSL_DIR=\"${ssl_dir}/\"'" >> CONFIG.mine && \
-    mkdir -p $prep_dir $ssl_dir
+    mkdir -p $prep_dir && \
+    mkdir -p $ssl_dir
 
 RUN make -j clean-deps && \
     make -j boost && \
@@ -84,6 +85,7 @@ ENV MP_SPDZ_HOME=${MP_SPDZ_HOME}
 ENV PYTHONPATH="${MP_SPDZ_HOME}:${PYTHONPATH}"
 
 COPY --from=build-mp-spdz ${MP_SPDZ_HOME} ${MP_SPDZ_HOME}
+COPY --from=build-mp-spdz /data /data
 
 RUN apt update && apt install -y --no-install-recommends \
                 libboost-dev \
