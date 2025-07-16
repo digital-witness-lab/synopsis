@@ -2,7 +2,7 @@
 #   - Make -DINSECURE flag a build-arg and do proper offline if we are not
 #   faking it
 ARG CRYPTO_PLAYERS=2
-ARG MP_SPDZ_TAG=v0.4.0
+ARG MP_SPDZ_TAG=v0.4.1
 ARG MP_SPDZ_HOME=/usr/src/MP-SPDZ
 ARG PYTHON_TAG=3.13-slim-bullseye
 
@@ -55,9 +55,9 @@ RUN echo "CXX = ${cxx}" >> CONFIG.mine &&\
     mkdir -p $prep_dir && \
     mkdir -p $ssl_dir
 
-RUN make -j clean-deps && \
-    make -j boost && \
-    make -j libote
+RUN make -j clean-deps
+RUN make -j boost
+RUN make -j libote
 
 RUN make -j mascot-party.x && \
     make -j setup && \
