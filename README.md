@@ -23,6 +23,10 @@ Pending dockerification, this should run out-of-the-box.
 ```bash
 $ docker build -t synopsis .
 $ docker run -v ./src:/app/src/ -it --entrypoint /bin/bash synopsis
+(synopsis)$ python synopsis/preprocess.py
+(synopsis)$ cat database.tsv | tr '[:space:]' ' ' > /app/Player-Data/Input-P0-0
+(synopsis)$ cat database2.tsv | tr '[:space:]' ' ' > /app/Player-Data/Input-P1-0
+(synopsis)$ synopsis run
 ```
 
 
