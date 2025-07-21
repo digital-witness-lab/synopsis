@@ -104,5 +104,6 @@ RUN pip install -r requirements.txt
 WORKDIR /app
 COPY . .
 RUN pip install .
+RUN mkdir Player-Data
 
 ENTRYPOINT ["synopsis"]
