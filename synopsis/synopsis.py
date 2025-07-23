@@ -103,9 +103,16 @@ def apply_threshold(data, count_threshold):
 
 # generate duplicate/concatenated query vector
 def pad_query(query, rows, cols):  # output size is query size x database size
-    dup = rows
+    dup = int(rows)
     # Duplicate and concatenate the vector
-    padded_q = query * int(dup)
+    padded_q = Array(dup * cols, sfix) # query is col terms long
+
+    @for_range_opt(dup)
+    def _(i):
+        @for_range_opt(cols)
+        def _(j):
+            padded_q[i * cols + j] = query[j]
+    
     return padded_q
 
 
